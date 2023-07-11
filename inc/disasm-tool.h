@@ -12,7 +12,7 @@
 
 #include "types.h"
 
-#define	PEEKSIZE 8
+#define PEEKSIZE 8
 
 void disassembler_open(csh *handle);
 void disassembler_close(csh *handle);

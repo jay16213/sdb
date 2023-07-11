@@ -11,16 +11,18 @@ int inside_range(unsigned long long target, range_t range)
     return target >= range.begin && target <= range.end;
 }
 
-#define PRINT_REG_VAL(regs, target_reg_name, user_input_name) {                                                  \
-    if(strcmp(#target_reg_name, user_input_name) == 0) {                                                         \
-        fprintf(stderr, "%s = %llu (0x%llx)\n", #target_reg_name, regs->target_reg_name, regs->target_reg_name); \
-        return;                                                                                                  \
-    }                                                                                                            \
-}
+#define PRINT_REG_VAL(regs, target_reg_name, user_input_name)                                                        \
+    {                                                                                                                \
+        if (strcmp(#target_reg_name, user_input_name) == 0)                                                          \
+        {                                                                                                            \
+            fprintf(stderr, "%s = %llu (0x%llx)\n", #target_reg_name, regs->target_reg_name, regs->target_reg_name); \
+            return;                                                                                                  \
+        }                                                                                                            \
+    }
 
 void print_register_value(struct user_regs_struct *regs, char *reg_name)
 {
-    if(reg_name)
+    if (reg_name)
     {
         PRINT_REG_VAL(regs, r15, reg_name);
         PRINT_REG_VAL(regs, r14, reg_name);
@@ -54,12 +56,14 @@ void print_register_value(struct user_regs_struct *regs, char *reg_name)
     return;
 }
 
-#define SET_REG_VAL(regs, target_reg_name, user_input_name, val) { \
-    if(strcmp(#target_reg_name, user_input_name) == 0) {           \
-        regs->target_reg_name = val;                               \
-        return 0;                                                  \
-    }                                                              \
-}
+#define SET_REG_VAL(regs, target_reg_name, user_input_name, val) \
+    {                                                            \
+        if (strcmp(#target_reg_name, user_input_name) == 0)      \
+        {                                                        \
+            regs->target_reg_name = val;                         \
+            return 0;                                            \
+        }                                                        \
+    }
 
 int set_register_value(struct user_regs_struct *regs, char *reg_name, unsigned long long val)
 {
@@ -88,7 +92,7 @@ int set_register_value(struct user_regs_struct *regs, char *reg_name, unsigned l
 
 void get_register_values(pid_t tracee, struct user_regs_struct *regs)
 {
-    if(ptrace(PTRACE_GETREGS, tracee, 0, regs) < 0)
+    if (ptrace(PTRACE_GETREGS, tracee, 0, regs) < 0)
         perror("ptrace get regs error");
     return;
 }
@@ -121,27 +125,28 @@ unsigned long long dump_code(pid_t tracee, unsigned long long addr)
     unsigned long long ptr = addr;
     int i, j;
 
-    for(i = 0; i < 10; i++, ptr += 8)
+    for (i = 0; i < 10; i++, ptr += 8)
     {
         long long peek;
         errno = 0;
         peek = ptrace(PTRACE_PEEKTEXT, tracee, ptr, NULL);
-        if(errno != 0) break;
-        memcpy(&buf[i*8], &peek, 8);
+        if (errno != 0)
+            break;
+        memcpy(&buf[i * 8], &peek, 8);
         has_read += 8;
     }
 
-    for(i = 0, ptr = addr; i < 5; i++, ptr += 16)
+    for (i = 0, ptr = addr; i < 5; i++, ptr += 16)
     {
         fprintf(stderr, "%12llx:", ptr);
-        for(j = 0; j < 16; j++)
-            fprintf(stderr, " %2.2x", buf[i*16 + j]);
+        for (j = 0; j < 16; j++)
+            fprintf(stderr, " %2.2x", buf[i * 16 + j]);
 
         fprintf(stderr, "  |");
 
-        for(j = 0; j < 16; j++)
+        for (j = 0; j < 16; j++)
         {
-            fprintf(stderr, "%c", isprint(buf[i*16 + j]) ? buf[i*16 + j] : '.');
+            fprintf(stderr, "%c", isprint(buf[i * 16 + j]) ? buf[i * 16 + j] : '.');
         }
 
         fprintf(stderr, "|\n");
