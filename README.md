@@ -11,7 +11,8 @@ support basic debugger usage, like set/delete breakpoint, step by step run instr
 ```bash
 # install dependencies
 sudo apt-get update
-sudo apt-get install libelf-dev libcapstone-dev
+sudo apt-get install libelf-dev
+./setup.sh # install capstone from source code
 
 # compile the debugger
 make
