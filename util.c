@@ -154,3 +154,15 @@ unsigned long long dump_code(pid_t tracee, unsigned long long addr)
 
     return addr + has_read;
 }
+
+void print_instruction(cs_insn *insn)
+{
+    int i;
+    char bytes[160] = "";
+
+    for (i = 0; i < insn->size; i++)
+        snprintf(&bytes[i * 3], 4, "%2.2x ", insn->bytes[i]);
+    fprintf(stderr, "%12lx: %-32s\t%-10s%s\n", insn->address, bytes, insn->mnemonic, insn->op_str);
+
+    return;
+}

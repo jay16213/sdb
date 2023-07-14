@@ -11,15 +11,15 @@
 #include <capstone/capstone.h>
 
 #include "types.h"
+#include "util.h"
 
-#define PEEKSIZE 8
+typedef struct disassembler_t disassembler_t;
 
-void disassembler_open(csh *handle);
-void disassembler_close(csh *handle);
+disassembler_t* disasm_init();
+void disasm_finalize(disassembler_t* disassembler);
 
-void disassemble_at_break(tracee_t *tracee, csh handle, int hit_id);
-unsigned long long disassemble(csh handle, unsigned char *code, unsigned long long code_size, unsigned long long addr, int disasm_size);
-unsigned long long disassemble_in_running(tracee_t *tracee, csh handle, unsigned long long addr);
-void print_instruction(cs_insn *insn);
+void disasm_at_break(disassembler_t* disassembler, int hit_id);
+uint64_t disasm(disassembler_t* disassembler, uint8_t *code, uint64_t code_size, uint64_t addr, int disasm_size);
+uint64_t disasm_in_running(disassembler_t* disassembler, uint64_t addr);
 
 #endif

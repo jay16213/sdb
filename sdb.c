@@ -23,11 +23,12 @@ int main(int argc, char *argv[])
     struct user_regs_struct regs;
     int wait_status;
     int hit = 0, hit_id = -1;
-    csh handle;
+    disassembler_t *disasmbler;
 
     FSM_STATE_TRANS(debugger_state, STATE_INIT);
     init_tracee(&tracee);
-    disassembler_open(&handle);
+
+    disasmbler = disasm_init(&tracee);
 
     if (argc >= 2)
     {
@@ -144,7 +145,7 @@ int main(int argc, char *argv[])
                     if ((hit_id = hit_breakpoint(&tracee, regs.rip - 1)) >= 0)
                     {
                         fprintf(stderr, "** breakpoint @ ");
-                        disassemble_at_break(&tracee, handle, hit_id);
+                        disasm_at_break(disasmbler, hit_id);
                         restore_code(&tracee, &regs, hit_id, 1);
                         hit = 1;
                     }
@@ -221,7 +222,7 @@ int main(int argc, char *argv[])
                     }
                 }
                 unsigned long long offset = (addr - tracee.text_section_addr.begin);
-                tracee.last_disasm_addr = disassemble(handle, tracee.text + offset, tracee.text_shdr.size - offset, addr, 10);
+                tracee.last_disasm_addr = disasm(disasmbler, tracee.text + offset, tracee.text_shdr.size - offset, addr, 10);
             }
             else // running state
             {
@@ -239,7 +240,7 @@ int main(int argc, char *argv[])
                     addr = strtoull(args, NULL, 0);
 
                 disable_all_breakpoints(&tracee);
-                tracee.last_disasm_addr = disassemble_in_running(&tracee, handle, addr);
+                tracee.last_disasm_addr = disasm_in_running(disasmbler, addr);
                 enable_all_breakpoints(&tracee);
             }
             break;
@@ -268,7 +269,7 @@ int main(int argc, char *argv[])
         }
         case COMMAND_EXIT:
         {
-            disassembler_close(&handle);
+            disasm_finalize(disasmbler);
             free_tracee(&tracee);
             exit(EXIT_SUCCESS);
         }
@@ -388,7 +389,7 @@ int main(int argc, char *argv[])
                     if ((hit_id = hit_breakpoint(&tracee, regs.rip - 1)) >= 0)
                     {
                         fprintf(stderr, "** breakpoint @ ");
-                        disassemble_at_break(&tracee, handle, hit_id);
+                        disasm_at_break(disasmbler, hit_id);
                         restore_code(&tracee, &regs, hit_id, 1);
                         hit = 1;
                     }
