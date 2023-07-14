@@ -1,0 +1,28 @@
+** program 'sample/hello64' load. entry point: 0x4000b0, vaddr: 0x4000b0, offset: 0xb0, size: 0x23
+** no addr is given.
+      4000b0: b8 04 00 00 00                  	mov       eax, 4
+      4000b5: bb 01 00 00 00                  	mov       ebx, 1
+      4000ba: b9 d4 00 60 00                  	mov       ecx, 0x6000d4
+      4000bf: ba 0e 00 00 00                  	mov       edx, 0xe
+      4000c4: cd 80                           	int       0x80
+      4000c6: b8 01 00 00 00                  	mov       eax, 1
+      4000cb: bb 00 00 00 00                  	mov       ebx, 0
+      4000d0: cd 80                           	int       0x80
+      4000d2: c3                              	ret       
+** pid 9172
+      4000c6: b8 01 00 00 00                  	mov       eax, 1
+      4000cb: bb 00 00 00 00                  	mov       ebx, 0
+      4000d0: cd 80                           	int       0x80
+      4000d2: c3                              	ret       
+      4000d3: 00 68 65                        	add       byte ptr [rax + 0x65], ch
+      4000d6: 6c                              	insb      byte ptr [rdi], dx
+      4000d7: 6c                              	insb      byte ptr [rdi], dx
+      4000d8: 6f                              	outsd     dx, dword ptr [rsi]
+      4000d9: 2c 20                           	sub       al, 0x20
+      4000db: 77 6f                           	ja        0x40014c
+      4000c6: cc 01 00 00 00 bb 00 00 00 00 cd 80 c3 00 68 65  |..............he|
+      4000d6: 6c 6c 6f 2c 20 77 6f 72 6c 64 21 0a 00 00 00 00  |llo, world!.....|
+      4000e6: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  |................|
+      4000f6: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 03 00  |................|
+      400106: 01 00 b0 00 40 00 00 00 00 00 00 00 00 00 00 00  |....@...........|
+sdb> sdb> sdb> sdb> sdb> sdb> sdb> 
