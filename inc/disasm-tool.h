@@ -12,14 +12,15 @@
 
 #include "types.h"
 #include "util.h"
+#include "tracee.h"
 
 typedef struct disassembler_t disassembler_t;
 
-disassembler_t* disasm_init();
-void disasm_finalize(disassembler_t* disassembler);
+disassembler_t *disasm_init(tracee_t *tracee);
+void disasm_finalize(disassembler_t *disassembler);
 
-void disasm_at_break(disassembler_t* disassembler, int hit_id);
-uint64_t disasm(disassembler_t* disassembler, uint8_t *code, uint64_t code_size, uint64_t addr, int disasm_size);
-uint64_t disasm_in_running(disassembler_t* disassembler, uint64_t addr);
+void disasm_at_break(disassembler_t *disassembler, int hit_id);
+uint64_t disasm(disassembler_t *disassembler, uint8_t *code, uint64_t code_size, uint64_t addr, int disasm_size);
+uint64_t disasm_in_running(disassembler_t *disassembler, uint64_t addr);
 
 #endif

@@ -68,8 +68,8 @@ int main(int argc, char *argv[])
             // load vmmap
             load_maps(&tracee, 0);
 
-            unsigned long long target = strtoull(args, NULL, 0);
-            unsigned long long code = 0;
+            uint64_t target = strtoull(args, NULL, 0);
+            uint64_t code = 0;
 
             if (debugger_state == STATE_RUNNING)
             {
@@ -324,7 +324,7 @@ int main(int argc, char *argv[])
             if (debugger_state == STATE_LOADED)
             {
                 // TODO: fix access permission
-                fprintf(stderr, "%016llx-%016llx r-x %llx\t%s\n",
+                fprintf(stderr, "%016lx-%016lx r-x %llx\t%s\n",
                         tracee.text_section_addr.begin,
                         tracee.text_section_addr.end,
                         tracee.text_shdr.offset,
