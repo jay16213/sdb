@@ -57,7 +57,7 @@ void disasm_at_break(disassembler_t* disassembler, int hit_id)
         cs_free(insn, count);
     }
     else
-        fprintf(stderr, "disasm error\n");
+        SDB_ERROR("disasm error\n");
 
     return;
 }
@@ -81,7 +81,7 @@ uint64_t disasm(disassembler_t* disassembler, uint8_t *code, uint64_t code_size,
     }
     else
     {
-        fprintf(stderr, "disasm error\n");
+        SDB_ERROR("disasm error\n");
     }
 
     return addr + has_read;
@@ -121,7 +121,7 @@ uint64_t disasm_in_running(disassembler_t* disassembler, uint64_t addr)
         cs_free(insn, count);
     }
     else
-        fprintf(stderr, "disasm error\n");
+        SDB_ERROR("disasm error\n");
 
     return addr + has_read;
 }

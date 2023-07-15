@@ -37,13 +37,13 @@ int load_elf(tracee_t *tracee, char *program_name)
 
     if ((eh = elf_open(program_name)) == NULL)
     {
-        fprintf(stderr, "** unable to open '%s'.\n", program_name);
+        SDB_ERROR("** unable to open '%s'.\n", program_name);
         return -1;
     }
 
     if (elf_load_all(eh) < 0)
     {
-        fprintf(stderr, "** unable to load '%s'.\n", program_name);
+        SDB_ERROR("** unable to load '%s'.\n", program_name);
         if (eh)
         {
             elf_close(eh);
@@ -60,7 +60,7 @@ int load_elf(tracee_t *tracee, char *program_name)
 
     if (tab == NULL)
     {
-        fprintf(stderr, "** section header string table not found.\n");
+        SDB_ERROR("** section header string table not found.\n");
         if (eh)
         {
             elf_close(eh);
@@ -94,8 +94,8 @@ int load_elf(tracee_t *tracee, char *program_name)
     if (read(eh->fd, tracee->text, text_shdr->size) < 0)
         error_quit("read text section error");
 
-    fprintf(stderr, "** program '%s' load. ", program_name);
-    fprintf(stderr, "entry point: 0x%-lx, vaddr: 0x%-llx, offset: 0x%-llx, size: 0x%llx\n",
+    SDB_INFO("** program '%s' load. ", program_name);
+    SDB_INFO("entry point: 0x%-lx, vaddr: 0x%-llx, offset: 0x%-llx, size: 0x%llx\n",
             eh->entrypoint,
             text_shdr->addr,
             text_shdr->offset,
@@ -129,7 +129,7 @@ int create_tracee_process(tracee_t *tracee)
         char *args[] = {NULL};
         execvp(tracee->program_name, args);
         perror("execvp error");
-        fprintf(stderr, "** if the program is at the current directory, try './<program_path>' as your path.\n");
+        SDB_ERROR("** if the program is at the current directory, try './<program_path>' as your path.\n");
         exit(EXIT_FAILURE);
     }
     else
@@ -154,7 +154,7 @@ int is_tracee_exit(tracee_t *tracee, int wait_status)
 {
     if (WIFEXITED(wait_status))
     {
-        fprintf(stderr, "** child process %d terminated normally (code %u)\n", tracee->pid, WEXITSTATUS(wait_status));
+        SDB_INFO("** child process %d terminated normally (code %u)\n", tracee->pid, WEXITSTATUS(wait_status));
         return 1;
     }
     return 0;
@@ -279,12 +279,12 @@ void delete_breakpoint_from_list(tracee_t *tracee, int id)
         if (bp[i].id == id)
         {
             bp[i].id = INVALID_BREAKPOINT_ID;
-            fprintf(stderr, "breakpoint %d deleted.\n", id);
+            SDB_INFO("breakpoint %d deleted.\n", id);
             return;
         }
     }
 
-    fprintf(stderr, "** can not find the breakpoint %d.\n", id);
+    SDB_ERROR("** can not find the breakpoint %d.\n", id);
 }
 
 void disable_all_breakpoints(tracee_t *tracee)
@@ -374,6 +374,6 @@ void print_breakpoint_list(tracee_t *tracee)
         if (bp[i].id == INVALID_BREAKPOINT_ID)
             continue;
 
-        fprintf(stderr, "  %d:  0x%06lx\n", bp[i].id, bp[i].address + tracee->baseaddr);
+        SDB_INFO("  %d:  0x%06lx\n", bp[i].id, bp[i].address + tracee->baseaddr);
     }
 }

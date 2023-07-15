@@ -58,12 +58,5 @@ jobs:
     - name: Build
       run: make
 
-  # Run the test
-  # test:
-  #   needs: build
-
-  #   runs-on: ubuntu-latest
-
-  #   steps:
-  #     - name: Run test
-  #       run: make test
+    - name: Test
+      run: make test

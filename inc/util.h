@@ -13,6 +13,7 @@
 
 #include <capstone/capstone.h>
 
+#include "logger.h"
 #include "types.h"
 
 #ifdef DEBUG
@@ -30,7 +31,7 @@ void print_register_value(struct user_regs_struct *regs, char *reg_name);
 int set_register_value(struct user_regs_struct *regs, char *reg_name, unsigned long long val);
 void get_register_values(pid_t tracee, struct user_regs_struct *regs);
 
-unsigned long long dump_code(pid_t tracee, unsigned long long addr);
+uint64_t dump_code(pid_t tracee, uint64_t addr);
 void print_instruction(cs_insn *insn);
 
 void help_msg();

@@ -1,4 +1,5 @@
 #include "inc/command.h"
+#include "inc/logger.h"
 
 #define MATCH_STR(str1, str2) strcmp(str1, str2) == 0
 
@@ -181,19 +182,19 @@ void print_command_error(int code)
     switch (code)
     {
     case ERROR_COMMAND_NOT_FOUND:
-        fprintf(stderr, "** command not found.\n");
+        SDB_ERROR("** command not found.\n");
         break;
     case ERROR_STATE_NOT_INIT:
-        fprintf(stderr, "** has already loaded one prgram.\n");
+        SDB_ERROR("** has already loaded one prgram.\n");
         break;
     case ERROR_STATE_NOT_LOADED:
-        fprintf(stderr, "** no program is loaded.\n");
+        SDB_ERROR("** no program is loaded.\n");
         break;
     case ERROR_STATE_NOT_RUNNING:
-        fprintf(stderr, "** no program is running.\n");
+        SDB_ERROR("** no program is running.\n");
         break;
     case ERROR_STATE_NOT_LOADED_NOR_RUNNING:
-        fprintf(stderr, "** no program is loaded or running.\n");
+        SDB_ERROR("** no program is loaded or running.\n");
         break;
     default:
         break;
