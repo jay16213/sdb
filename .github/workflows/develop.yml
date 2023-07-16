@@ -1,0 +1,70 @@
+name: Develop CI
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+  # enable running a workflow manually
+  workflow_dispatch:
+
+jobs:
+  # Setup environment
+  # setup:
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+  #   - name: Install dependencies
+  #     run: |
+  #       sudo apt-get update
+  #       sudo apt-get -y install libelf-dev
+
+  #   - name: clone capstone-engine/capstone
+  #     uses: actions/checkout@v3
+  #     with:
+  #       repository: capstone-engine/capstone
+  #       ref: '5.0'
+
+  #   - name: Install capstone
+  #     run: |
+  #       CAPSTONE_ARCHS="aarch64 x86" ./make.sh
+  #       sudo ./make.sh install
+
+  # Build the project
+  build:
+    runs-on: ubuntu-latest
+    # needs: setup
+
+    steps:
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get -y install libelf-dev
+
+    - name: clone capstone-engine/capstone
+      uses: actions/checkout@v3
+      with:
+        repository: capstone-engine/capstone
+        ref: '5.0'
+
+    - name: Install capstone
+      run: |
+        CAPSTONE_ARCHS="aarch64 x86" ./make.sh
+        sudo ./make.sh install
+
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Build
+      run: make
+
+    - name: Test
+      run: make test
+
+    - name: 'Store failed test result'
+      uses: actions/upload-artifact@v3
+      if: failure()
+      with:
+        name: test-result-artifact
+        path: test/
+        retention-days: 3

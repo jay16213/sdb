@@ -1,0 +1,14 @@
+** program 'sample/hello64' load. entry point: 0x4000b0, vaddr: 0x4000b0, offset: 0xb0, size: 0x23
+00000000004000b0-00000000004000d3 r-x b0	sample/hello64
+** pid 9168
+0000000000400000-0000000000401000 r-x 0		/home/jay/sdb/sample/hello64
+0000000000600000-0000000000601000 rw- 0		/home/jay/sdb/sample/hello64
+00007ffd99849000-00007ffd9986b000 rw- 0		[stack]
+00007ffd999f3000-00007ffd999f7000 r-- 0		[vvar]
+00007ffd999f7000-00007ffd999f8000 r-x 0		[vdso]
+7fffffffffffffff-7fffffffffffffff --x 0		[vsyscall]
+rip = 4194480 (0x4000b0)
+** program 'sample/hello64' is already running.
+hello, world!
+** child process 9168 terminated normally (code 0)
+sdb> sdb> sdb> sdb> sdb> sdb> sdb> 
