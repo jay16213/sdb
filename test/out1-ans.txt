@@ -6,6 +6,7 @@
 00007ffd99849000-00007ffd9986b000 rw- 0		[stack]
 00007ffd999f3000-00007ffd999f7000 r-- 0		[vvar]
 00007ffd999f7000-00007ffd999f8000 r-x 0		[vdso]
+7fffffffffffffff-7fffffffffffffff --x 0		[vsyscall]
 rip = 4194480 (0x4000b0)
 ** program 'sample/hello64' is already running.
 hello, world!

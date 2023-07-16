@@ -60,3 +60,11 @@ jobs:
 
     - name: Test
       run: make test
+
+    - name: 'Store failed test result'
+      uses: actions/upload-artifact@v3
+      if: failure()
+      with:
+        name: test-result-artifact
+        path: test/
+        retention-days: 3

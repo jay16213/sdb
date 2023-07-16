@@ -7,17 +7,20 @@ num_of_testcase=4
 
 # Run test and redirect output to file
 ./sdb < "${TEST_FOLDER}/testcase1.txt" > "${TEST_FOLDER}/out1.txt" 2>&1
-./sdb sample/hello64 < test/testcase2.txt > "${TEST_FOLDER}/out2.txt" 2>&1
-./sdb sample/hello64 < test/testcase3.txt > "${TEST_FOLDER}/out3.txt" 2>&1
-./sdb sample/hello64 < test/testcase4.txt > "${TEST_FOLDER}/out4.txt" 2>&1
+./sdb sample/hello64 < "${TEST_FOLDER}/testcase2.txt" > "${TEST_FOLDER}/out2.txt" 2>&1
+./sdb sample/hello64 < "${TEST_FOLDER}/testcase3.txt" > "${TEST_FOLDER}/out3.txt" 2>&1
+./sdb sample/hello64 < "${TEST_FOLDER}/testcase4.txt" > "${TEST_FOLDER}/out4.txt" 2>&1
 
 # define regular expression of each testcase
 declare -A regex_array1
 regex_array1[3]="^\*\* pid [0-9]{1,5}$"
+regex_array1[4]="^([0-9a-f]{16})-([0-9a-f]{16})\s+(r-x)\s+(0)\s+.*sample/hello64$"
+regex_array1[5]="^([0-9a-f]{16})-([0-9a-f]{16})\s+(rw-)\s+(0)\s+.*sample/hello64$"
 regex_array1[6]="^([0-9a-f]{16})-([0-9a-f]{16})\s+(rw-)\s+(0)\s+\[stack\]$"
 regex_array1[7]="^([0-9a-f]{16})-([0-9a-f]{16})\s+(r--)\s+(0)\s+\[vvar\]$"
 regex_array1[8]="^([0-9a-f]{16})-([0-9a-f]{16})\s+(r-x)\s+(0)\s+\[vdso\]$"
-regex_array1[12]="^\*\* child process [0-9]{1,5} terminated normally \(code 0\)$"
+regex_array1[9]="^([0-9a-f]{16})-([0-9a-f]{16})\s+(--x)\s+(0)\s+\[vsyscall\]$"
+regex_array1[13]="^\*\* child process [0-9]{1,5} terminated normally \(code 0\)$"
 
 declare -A regex_array2
 regex_array2[2]="^\*\* pid [0-9]{1,5}$"
