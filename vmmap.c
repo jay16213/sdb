@@ -54,7 +54,7 @@ int load_maps(tracee_t *tracee, int print_result)
 
         if (print_result)
         {
-            fprintf(stderr, "%016llx-%016llx %s %lu\t\t%s\n",
+            fprintf(stderr, "%016lx-%016lx %s %lu\t\t%s\n",
                     m.range.begin, m.range.end,
                     perm_str,
                     m.offset,

@@ -23,11 +23,12 @@ int main(int argc, char *argv[])
     struct user_regs_struct regs;
     int wait_status;
     int hit = 0, hit_id = -1;
-    csh handle;
+    disassembler_t *disasmbler;
 
     FSM_STATE_TRANS(debugger_state, STATE_INIT);
     init_tracee(&tracee);
-    disassembler_open(&handle);
+
+    disasmbler = disasm_init(&tracee);
 
     if (argc >= 2)
     {
@@ -42,6 +43,7 @@ int main(int argc, char *argv[])
     while (1)
     {
         printf("sdb> ");
+
         memset(user_input, '\0', sizeof(user_input));
         fgets(user_input, 256, stdin);
         command = strtok(user_input, DELIMETER);
@@ -60,21 +62,21 @@ int main(int argc, char *argv[])
         {
             if ((args = strtok(NULL, DELIMETER)) == NULL)
             {
-                fprintf(stderr, "** usage: break {instruction-address}\n");
+                SDB_ERROR("** usage: break {instruction-address}\n");
                 continue;
             }
 
             // load vmmap
             load_maps(&tracee, 0);
 
-            unsigned long long target = strtoull(args, NULL, 0);
-            unsigned long long code = 0;
+            uint64_t target = strtoull(args, NULL, 0);
+            uint64_t code = 0;
 
             if (debugger_state == STATE_RUNNING)
             {
                 if (!inside_range(target, tracee.text_phaddr))
                 {
-                    fprintf(stderr, "** the address should be within the range specified by the text segment.\n");
+                    SDB_ERROR("** the address should be within the range specified by the text segment.\n");
                     continue;
                 }
 
@@ -85,7 +87,7 @@ int main(int argc, char *argv[])
             {
                 if (!inside_range(target, tracee.text_section_addr))
                 {
-                    fprintf(stderr, "** the address should be within the range specified by the text segment in the ELF file.\n");
+                    SDB_ERROR("** the address should be within the range specified by the text segment in the ELF file.\n");
                     continue;
                 }
 
@@ -98,7 +100,7 @@ int main(int argc, char *argv[])
         case COMMAND_RUN:
         {
             if (debugger_state == STATE_RUNNING)
-                fprintf(stderr, "** program '%s' is already running.\n", tracee.program_name);
+                SDB_ERROR("** program '%s' is already running.\n", tracee.program_name);
             else
             {
                 create_tracee_process(&tracee);
@@ -109,7 +111,7 @@ int main(int argc, char *argv[])
                 tracee.last_dump_addr = 0;
                 FSM_STATE_TRANS(debugger_state, STATE_RUNNING);
 
-                fprintf(stderr, "** pid %d\n", tracee.pid);
+                SDB_ERROR("** pid %d\n", tracee.pid);
             }
             // no break at COMMAND_RUN case: run & continue command share the same handle logic
         }
@@ -143,8 +145,8 @@ int main(int argc, char *argv[])
 
                     if ((hit_id = hit_breakpoint(&tracee, regs.rip - 1)) >= 0)
                     {
-                        fprintf(stderr, "** breakpoint @ ");
-                        disassemble_at_break(&tracee, handle, hit_id);
+                        SDB_ERROR("** breakpoint @ ");
+                        disasm_at_break(disasmbler, hit_id);
                         restore_code(&tracee, &regs, hit_id, 1);
                         hit = 1;
                     }
@@ -157,14 +159,14 @@ int main(int argc, char *argv[])
             args = strtok(NULL, DELIMETER);
             if (args == NULL)
             {
-                fprintf(stderr, "** usage: delete {break-point-id}\n");
+                SDB_ERROR("** usage: delete {break-point-id}\n");
                 continue;
             }
 
             int id = atoi(args);
             if (find_breakpoint(&tracee, id) < 0)
             {
-                fprintf(stderr, "** can not find breakpoint %d.\n", id);
+                SDB_ERROR("** can not find breakpoint %d.\n", id);
                 continue;
             }
 
@@ -196,15 +198,15 @@ int main(int argc, char *argv[])
                 {
                     if (tracee.last_disasm_addr == 0)
                     {
-                        fprintf(stderr, "** no addr is given.\n");
+                        SDB_ERROR("** no addr is given.\n");
                         continue;
                     }
                     else
                     {
                         if (tracee.last_disasm_addr >= tracee.text_section_addr.end)
                         {
-                            fprintf(stderr, "** reach the end of the text section.\n");
-                            fprintf(stderr, "** the debugger will go back to the begin of the text section and continue disassembling.\n");
+                            SDB_ERROR("** reach the end of the text section.\n");
+                            SDB_ERROR("** the debugger will go back to the begin of the text section and continue disassembling.\n");
                             tracee.last_disasm_addr = tracee.text_section_addr.begin;
                         }
                         addr = tracee.last_disasm_addr;
@@ -215,13 +217,12 @@ int main(int argc, char *argv[])
                     addr = strtoull(args, NULL, 0);
                     if (!inside_range(addr, tracee.text_section_addr))
                     {
-                        fprintf(stderr,
-                                "** the address should be within the range specified by the text segment in the ELF file\n");
+                        SDB_ERROR("** the address should be within the range specified by the text segment in the ELF file\n");
                         continue;
                     }
                 }
                 unsigned long long offset = (addr - tracee.text_section_addr.begin);
-                tracee.last_disasm_addr = disassemble(handle, tracee.text + offset, tracee.text_shdr.size - offset, addr, 10);
+                tracee.last_disasm_addr = disasm(disasmbler, tracee.text + offset, tracee.text_shdr.size - offset, addr, 10);
             }
             else // running state
             {
@@ -229,7 +230,7 @@ int main(int argc, char *argv[])
                 {
                     if (tracee.last_disasm_addr == 0)
                     {
-                        fprintf(stderr, "** no addr is given.\n");
+                        SDB_ERROR("** no addr is given.\n");
                         continue;
                     }
                     else
@@ -239,7 +240,7 @@ int main(int argc, char *argv[])
                     addr = strtoull(args, NULL, 0);
 
                 disable_all_breakpoints(&tracee);
-                tracee.last_disasm_addr = disassemble_in_running(&tracee, handle, addr);
+                tracee.last_disasm_addr = disasm_in_running(disasmbler, addr);
                 enable_all_breakpoints(&tracee);
             }
             break;
@@ -254,7 +255,7 @@ int main(int argc, char *argv[])
             {
                 if (tracee.last_dump_addr == 0)
                 {
-                    fprintf(stderr, "** no addr is given.\n");
+                    SDB_ERROR("** no addr is given.\n");
                     continue;
                 }
                 else
@@ -268,7 +269,7 @@ int main(int argc, char *argv[])
         }
         case COMMAND_EXIT:
         {
-            disassembler_close(&handle);
+            disasm_finalize(disasmbler);
             free_tracee(&tracee);
             exit(EXIT_SUCCESS);
         }
@@ -276,7 +277,7 @@ int main(int argc, char *argv[])
         {
             if ((args = strtok(NULL, DELIMETER)) == NULL)
             {
-                fprintf(stderr, "** usage: get {reg}. Register names are all in lowercase\n");
+                SDB_ERROR("** usage: get {reg}. Register names are all in lowercase\n");
                 continue;
             }
 
@@ -304,7 +305,7 @@ int main(int argc, char *argv[])
         {
             if ((args = strtok(NULL, DELIMETER)) == NULL)
             {
-                fprintf(stderr, "** usage: load {path to a program}\n");
+                SDB_ERROR("** usage: load {path to a program}\n");
                 continue;
             }
 
@@ -323,7 +324,7 @@ int main(int argc, char *argv[])
             if (debugger_state == STATE_LOADED)
             {
                 // TODO: fix access permission
-                fprintf(stderr, "%016llx-%016llx r-x %llx\t%s\n",
+                SDB_ERROR("%016lx-%016lx r-x %llx\t%s\n",
                         tracee.text_section_addr.begin,
                         tracee.text_section_addr.end,
                         tracee.text_shdr.offset,
@@ -339,14 +340,14 @@ int main(int argc, char *argv[])
             char *reg_name;
             if ((reg_name = strtok(NULL, DELIMETER)) == NULL)
             {
-                fprintf(stderr, "** usage: set reg val\n");
+                SDB_ERROR("** usage: set reg val\n");
                 continue;
             }
 
             // get value
             if ((args = strtok(NULL, DELIMETER)) == NULL)
             {
-                fprintf(stderr, "** usage: set reg val\n");
+                SDB_ERROR("** usage: set reg val\n");
                 continue;
             }
 
@@ -356,7 +357,7 @@ int main(int argc, char *argv[])
 
             if (set_register_value(&regs, reg_name, val) < 0)
             {
-                fprintf(stderr, "** no register named '%s'.\n", reg_name);
+                SDB_ERROR("** no register named '%s'.\n", reg_name);
                 continue;
             }
 
@@ -387,8 +388,8 @@ int main(int argc, char *argv[])
 
                     if ((hit_id = hit_breakpoint(&tracee, regs.rip - 1)) >= 0)
                     {
-                        fprintf(stderr, "** breakpoint @ ");
-                        disassemble_at_break(&tracee, handle, hit_id);
+                        SDB_INFO("** breakpoint @ ");
+                        disasm_at_break(disasmbler, hit_id);
                         restore_code(&tracee, &regs, hit_id, 1);
                         hit = 1;
                     }
@@ -406,7 +407,7 @@ int main(int argc, char *argv[])
             tracee.last_dump_addr = 0;
             FSM_STATE_TRANS(debugger_state, STATE_RUNNING);
 
-            fprintf(stderr, "** pid %d\n", tracee.pid);
+            SDB_INFO("** pid %d\n", tracee.pid);
             break;
         }
         }

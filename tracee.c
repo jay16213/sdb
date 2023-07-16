@@ -1,5 +1,7 @@
 #include "inc/tracee.h"
 
+#define INVALID_BREAKPOINT_ID -1
+
 void init_tracee(tracee_t *tracee)
 {
     int i;
@@ -15,7 +17,6 @@ void init_tracee(tracee_t *tracee)
     memset(tracee->program_name, 0, sizeof(tracee->program_name));
     for (i = 0; i < MAX_BREAKPOINTS; i++)
         tracee->breakpoints[i].id = -1;
-    return;
 }
 
 void free_tracee(tracee_t *tracee)
@@ -23,7 +24,6 @@ void free_tracee(tracee_t *tracee)
     if (tracee->text)
         free(tracee->text);
     init_tracee(tracee);
-    return;
 }
 
 int load_elf(tracee_t *tracee, char *program_name)
@@ -37,13 +37,13 @@ int load_elf(tracee_t *tracee, char *program_name)
 
     if ((eh = elf_open(program_name)) == NULL)
     {
-        fprintf(stderr, "** unable to open '%s'.\n", program_name);
+        SDB_ERROR("** unable to open '%s'.\n", program_name);
         return -1;
     }
 
     if (elf_load_all(eh) < 0)
     {
-        fprintf(stderr, "** unable to load '%s'.\n", program_name);
+        SDB_ERROR("** unable to load '%s'.\n", program_name);
         if (eh)
         {
             elf_close(eh);
@@ -60,7 +60,7 @@ int load_elf(tracee_t *tracee, char *program_name)
 
     if (tab == NULL)
     {
-        fprintf(stderr, "** section header string table not found.\n");
+        SDB_ERROR("** section header string table not found.\n");
         if (eh)
         {
             elf_close(eh);
@@ -94,8 +94,8 @@ int load_elf(tracee_t *tracee, char *program_name)
     if (read(eh->fd, tracee->text, text_shdr->size) < 0)
         error_quit("read text section error");
 
-    fprintf(stderr, "** program '%s' load. ", program_name);
-    fprintf(stderr, "entry point: 0x%-lx, vaddr: 0x%-llx, offset: 0x%-llx, size: 0x%llx\n",
+    SDB_INFO("** program '%s' load. ", program_name);
+    SDB_INFO("entry point: 0x%-lx, vaddr: 0x%-llx, offset: 0x%-llx, size: 0x%llx\n",
             eh->entrypoint,
             text_shdr->addr,
             text_shdr->offset,
@@ -113,10 +113,12 @@ int create_tracee_process(tracee_t *tracee)
 {
     pid_t child;
     int wait_status;
+
     if ((child = fork()) < 0)
     {
         error_quit("fork error");
     }
+
     if (child == 0)
     {
         if (ptrace(PTRACE_TRACEME, 0, 0, 0) < 0)
@@ -127,7 +129,7 @@ int create_tracee_process(tracee_t *tracee)
         char *args[] = {NULL};
         execvp(tracee->program_name, args);
         perror("execvp error");
-        fprintf(stderr, "** if the program is at the current directory, try './<program_path>' as your path.\n");
+        SDB_ERROR("** if the program is at the current directory, try './<program_path>' as your path.\n");
         exit(EXIT_FAILURE);
     }
     else
@@ -152,7 +154,7 @@ int is_tracee_exit(tracee_t *tracee, int wait_status)
 {
     if (WIFEXITED(wait_status))
     {
-        fprintf(stderr, "** child process %d terminated normally (code %u)\n", tracee->pid, WEXITSTATUS(wait_status));
+        SDB_INFO("** child process %d terminated normally (code %u)\n", tracee->pid, WEXITSTATUS(wait_status));
         return 1;
     }
     return 0;
@@ -164,17 +166,16 @@ void tracee_single_step(tracee_t *tracee, int *wait_status)
         error_quit("ptrace single step error");
     if (waitpid(tracee->pid, wait_status, 0) < 0)
         error_quit("waitpid");
-    return;
 }
 
-int hit_breakpoint(tracee_t *tracee, unsigned long long address)
+int hit_breakpoint(tracee_t *tracee, uint64_t address)
 {
     breakpoint_t *bp = tracee->breakpoints;
-
     int i;
+
     for (i = 0; i < MAX_BREAKPOINTS; i++)
     {
-        if (bp[i].id == -1)
+        if (bp[i].id == INVALID_BREAKPOINT_ID)
             continue;
 
         if ((bp[i].address + tracee->baseaddr) == address)
@@ -184,7 +185,7 @@ int hit_breakpoint(tracee_t *tracee, unsigned long long address)
     return -1;
 }
 
-int set_breakpoint(tracee_t *tracee, unsigned long long target_addr, unsigned long long *code)
+int set_breakpoint(tracee_t *tracee, uint64_t target_addr, uint64_t *code)
 {
     // get original text
     if ((*code = ptrace(PTRACE_PEEKTEXT, tracee->pid, target_addr + tracee->baseaddr, 0)) < 0)
@@ -206,7 +207,7 @@ int set_breakpoint(tracee_t *tracee, unsigned long long target_addr, unsigned lo
 int restore_code(tracee_t *tracee, struct user_regs_struct *regs, int bpoint_id, int reset)
 {
     breakpoint_t *bp = tracee->breakpoints;
-    unsigned long long code = 0;
+    uint64_t code = 0;
 
     // get current code
     if ((code = ptrace(PTRACE_PEEKTEXT, tracee->pid, bp[bpoint_id].address + tracee->baseaddr, 0)) < 0)
@@ -239,8 +240,8 @@ int restore_code(tracee_t *tracee, struct user_regs_struct *regs, int bpoint_id,
 int find_breakpoint(tracee_t *tracee, int id)
 {
     breakpoint_t *bp = tracee->breakpoints;
-
     int i;
+
     for (i = 0; i < MAX_BREAKPOINTS; i++)
     {
         if (bp[i].id == id)
@@ -250,15 +251,15 @@ int find_breakpoint(tracee_t *tracee, int id)
     return -1;
 }
 
-void add_breakpoint_to_list(tracee_t *tracee, unsigned long long address, unsigned long long code)
+void add_breakpoint_to_list(tracee_t *tracee, uint64_t address, uint64_t code)
 {
     breakpoint_t *bp = tracee->breakpoints;
     unsigned char *cptr = (unsigned char *)&code;
-
     int i;
+
     for (i = 0; i < MAX_BREAKPOINTS; i++)
     {
-        if (bp[i].id == -1)
+        if (bp[i].id == INVALID_BREAKPOINT_ID)
         {
             bp[i].id = i;
             bp[i].address = address;
@@ -266,37 +267,35 @@ void add_breakpoint_to_list(tracee_t *tracee, unsigned long long address, unsign
             break;
         }
     }
-
-    return;
 }
 
 void delete_breakpoint_from_list(tracee_t *tracee, int id)
 {
     breakpoint_t *bp = tracee->breakpoints;
     int i;
+
     for (i = 0; i < MAX_BREAKPOINTS; i++)
     {
         if (bp[i].id == id)
         {
-            bp[i].id = -1;
-            fprintf(stderr, "breakpoint %d deleted.\n", id);
+            bp[i].id = INVALID_BREAKPOINT_ID;
+            SDB_INFO("breakpoint %d deleted.\n", id);
             return;
         }
     }
 
-    fprintf(stderr, "** can not find the breakpoint %d.\n", id);
-    return;
+    SDB_ERROR("** can not find the breakpoint %d.\n", id);
 }
 
 void disable_all_breakpoints(tracee_t *tracee)
 {
     breakpoint_t *bp = tracee->breakpoints;
-    unsigned long long code = 0;
-
+    uint64_t code = 0;
     int i;
+
     for (i = 0; i < MAX_BREAKPOINTS; i++)
     {
-        if (bp[i].id == -1)
+        if (bp[i].id == INVALID_BREAKPOINT_ID)
             continue;
 
         // get current code
@@ -313,19 +312,17 @@ void disable_all_breakpoints(tracee_t *tracee)
             return;
         }
     }
-
-    return;
 }
 
 void enable_all_breakpoints(tracee_t *tracee)
 {
     breakpoint_t *bp = tracee->breakpoints;
-    unsigned long long code = 0;
-
+    uint64_t code = 0;
     int i;
+
     for (i = 0; i < MAX_BREAKPOINTS; i++)
     {
-        if (bp[i].id == -1)
+        if (bp[i].id == INVALID_BREAKPOINT_ID)
             continue;
 
         // get current code
@@ -342,20 +339,18 @@ void enable_all_breakpoints(tracee_t *tracee)
             return;
         }
     }
-
-    return;
 }
 
 void get_breakpoints_origin_code(tracee_t *tracee)
 {
     breakpoint_t *bp = tracee->breakpoints;
-    unsigned long long code = 0;
+    uint64_t code = 0;
     unsigned char *cptr = (unsigned char *)&code;
-
     int i;
+
     for (i = 0; i < MAX_BREAKPOINTS; i++)
     {
-        if (bp[i].id == -1)
+        if (bp[i].id == INVALID_BREAKPOINT_ID)
             continue;
 
         // get original text
@@ -367,8 +362,6 @@ void get_breakpoints_origin_code(tracee_t *tracee)
 
         bp[i].origin_code = cptr[0];
     }
-
-    return;
 }
 
 void print_breakpoint_list(tracee_t *tracee)
@@ -378,10 +371,9 @@ void print_breakpoint_list(tracee_t *tracee)
     int i;
     for (i = 0; i < MAX_BREAKPOINTS; i++)
     {
-        if (bp[i].id == -1)
+        if (bp[i].id == INVALID_BREAKPOINT_ID)
             continue;
 
-        fprintf(stderr, "  %d:  0x%06llx\n", bp[i].id, bp[i].address + tracee->baseaddr);
+        SDB_INFO("  %d:  0x%06lx\n", bp[i].id, bp[i].address + tracee->baseaddr);
     }
-    return;
 }

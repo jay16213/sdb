@@ -58,12 +58,13 @@ jobs:
     - name: Build
       run: make
 
-  # Run the test
-  # test:
-  #   needs: build
+    - name: Test
+      run: make test
 
-  #   runs-on: ubuntu-latest
-
-  #   steps:
-  #     - name: Run test
-  #       run: make test
+    - name: 'Store failed test result'
+      uses: actions/upload-artifact@v3
+      if: failure()
+      with:
+        name: test-result-artifact
+        path: test/
+        retention-days: 3

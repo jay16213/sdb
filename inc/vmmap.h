@@ -7,6 +7,7 @@
 #include <stdio.h>
 
 #include "types.h"
+#include "tracee.h"
 
 int load_maps(tracee_t *tracee, int print_result);
 

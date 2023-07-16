@@ -1,15 +1,24 @@
 CC = gcc
 CFLAGS = -Wall
+DEBUG_FLAGS = -DDEBUG -g3 -fno-inline -O0
 LDFLAGS = -lelftool -lcapstone -lelf
 INCLUDE_PATH = ./inc
 OBJS = util.o command.o vmmap.o disasm-tool.o tracee.o sdb.o
 PROG = sdb
 
-all: $(OBJS)
-	$(CC) $^ -L. $(LDFLAGS) -I $(INCLUDE_PATH) -o $(PROG)
+all: executable
+
+debug: CFLAGS += $(DEBUG_FLAGS)
+debug: executable
+
+executable: $(OBJS)
+	$(CC) $^ -L. $(LDFLAGS) -o $(PROG)
+
+test: executable
+	./test.sh
 
 %.o: %.c
-	$(CC) -c $< $(CFLAGS) -o $@
+	$(CC) -I $(INCLUDE_PATH) -c $< $(CFLAGS) -o $@
 
 .PHONY: clean
 clean:
