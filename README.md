@@ -1,6 +1,8 @@
 SDB
 ===
 
+[![Develop CI](https://github.com/jay16213/sdb/actions/workflows/develop.yml/badge.svg)](https://github.com/jay16213/sdb/actions/workflows/develop.yml)
+
 simple C debugger like gdb
 
 ### How can I do with SDB ?
@@ -82,8 +84,38 @@ show the help message
 terminate the debugger
 
 ## Example
+![example.gif](./example.gif)
+
 ```
-TODO...
+$ ./sdb sample/hello64
+** program 'sample/hello64' load. entry point: 0x4000b0, vaddr: 0x4000b0, offset: 0xb0, size: 0x23
+sdb> disasm 0x4000b0
+      4000b0: b8 04 00 00 00                    mov       eax, 4
+      4000b5: bb 01 00 00 00                    mov       ebx, 1
+      4000ba: b9 d4 00 60 00                    mov       ecx, 0x6000d4
+      4000bf: ba 0e 00 00 00                    mov       edx, 0xe
+      4000c4: cd 80                             int       0x80
+      4000c6: b8 01 00 00 00                    mov       eax, 1
+      4000cb: bb 00 00 00 00                    mov       ebx, 0
+      4000d0: cd 80                             int       0x80
+      4000d2: c3                                ret
+sdb> b 0x4000c6
+sdb> l
+  0:  4000c6
+sdb> run
+** pid 11796
+hello, world!
+** breakpoint @       4000c6: b8 01 00 00 00                    mov       eax, 1
+sdb> set rip 0x4000b0
+sdb> cont
+hello, world!
+** breakpoint @       4000c6: b8 01 00 00 00                    mov       eax, 1
+sdb> delete 0
+** breakpoint 0 deleted.
+sdb> set rip 0x4000b0
+sdb> cont
+hello, world!
+** child process 11796 terminated normally (code 0)
 ```
 
 ## License
